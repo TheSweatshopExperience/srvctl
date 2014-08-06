@@ -1,0 +1,195 @@
+#!/bin/bash
+# TSE projects are released under the terms of the MIT license unless otherwise specified.
+
+USAGE="srvctl (console | start | shutdown | vanilla | rr | csgo | gmod)"
+USAGERR="srvctl rr (start | restart | stop)"
+USAGEVANILLA="srvctl vanilla (start | restart | stop)"
+USAGECSGO="srvctl csgo (start | restart | stop | update)"
+USAGEGMOD="srvctl gmod (start | restart | stop | update)"
+
+# CS:GO Server Config stuff starts here.
+DIR_STEAMCMD="/home/tse/steamcmd"
+STEAM_LOGIN="anonymous"
+STEAM_PASSWORD="anonymous"
+STEAM_RUNSCRIPT="$DIR_STEAMCMD/runscript_$SCREEN_NAME"
+
+DIR_ROOT="$DIR_STEAMCMD/games/csgo"
+DIR_GAME="$DIR_ROOT/csgo"
+DIR_LOGS="$DIR_GAME/logs"
+
+IP="cs.tsegaming.org"
+PORT="27015"
+
+MAXPLAYERS="10"
+TICKRATE="64"
+EXTRAPARAMS="-nohltv +sv_pure 0 +game_type 0 +game_mode 1 +mapgroup mg_active +map cs_office"
+PARAM_START="-game csgo -console -usercon -secure -autoupdate -steam_dir ${DIR_STEAMCMD} -steamcmd_script ${STEAM_RUNSCRIPT} -maxplayers_override ${MAXPLAYERS} -tickrate ${TICKRATE} +hostport ${PORT} +ip ${IP} +net_public_adr ${IP} ${EXTRAPARAMS}"
+PARAM_UPDATE="+login ${STEAM_LOGIN} ${STEAM_PASSWORD} +force_install_dir ${DIR_ROOT} +app_update 740 validate +quit"
+# CS:GO Server Config stuff ends here.
+
+# GMod server stuff starts here.
+GMOD_IP="gmod.tsegaming.org"
+GMOD_PORT="27015"
+GMOD_PARAM_START="-game garrysmod +maxplayers 20 +map gm_construct +hostport ${GMOD_PORT} +ip ${GMOD_IP} +net_public_adr ${GMOD_IP}"
+# GMod server stuff ends here.
+
+function vanilla {
+    if [[ "$1" = "" ]]; then
+        echo "No argument supplied"
+        echo $USAGEVANILLA
+    elif [[ "$1" = "--help" ]]; then
+        echo $USAGEVANILLA
+    elif [[ "$1" = "start" ]]; then
+        tmux new-window -tTSE:0 -n Vanilla
+        tmux send-keys -tTSE:0 'cd ~/vanilla/; sh start.sh' C-m
+        sleep 5
+        echo "Vanilla started. Please give it a min to load."
+    elif [[ "$1" = "stop" ]]; then
+        tmux send-keys -tTSE:0 'save-all' C-m
+        tmux send-keys -tTSE:0 'shutdown' C-m
+        tmux kill-pane -tTSE:0
+        sleep 5
+        echo "Vanilla stopped."
+    elif [[ "$1" = "restart" ]]; then
+        echo "Restarting Vanilla."
+        vanilla stop
+        vanilla start
+    else
+        echo "Unknown argument supplied."
+        echo $USAGEVANILLA
+    fi
+}
+
+function resonantrise {
+    if [[ "$1" = "" ]]; then
+        echo "No argument supplied"
+        echo $USAGERR
+    elif [[ "$1" = "--help" ]]; then
+        echo $USAGERR
+    elif [[ "$1" = "start" ]]; then
+        tmux new-window -tTSE:1 -n ResonantRise
+        tmux send-keys -tTSE:1 'cd ~/rr/; sh start.sh' C-m
+        sleep 5
+        echo "Resonant Rise started. Please give it a min to load."
+    elif [[ "$1" = "stop" ]]; then
+        tmux send-keys -tTSE:1 'save-all' C-m
+        tmux send-keys -tTSE:1 'shutdown' C-m
+        tmux kill-pane -tTSE:1
+        sleep 5
+        echo "Resonant Rise stopped."
+    elif [[ "$1" = "restart" ]]; then
+        echo "Restarting Resonant Rise."
+        resonantrise stop
+        resonantrise start
+    else
+        echo "Unknown argument supplied."
+        echo $USAGERR
+    fi
+}
+
+function csgo {
+    if [[ "$1" = "" ]]; then
+        echo "No argument supplied"
+        echo $USAGECSGO
+    elif [[ "$1" = "--help" ]]; then
+        echo $USAGECSGO
+    elif [[ "$1" = "start" ]]; then
+        tmux new-window -tTSE:2 -n CounterStrike
+        tmux send-keys -tTSE:2 'cd ~/steamcmd/games/csgo; sh srcds_run $PARAM_START' C-m
+        sleep 5
+        echo "Counter Strike : Global Offensive started."
+    elif [[ "$1" = "stop" ]]; then
+        tmux kill-pane -tTSE:2
+        sleep 5
+        echo "Counter Strike : Global Offensive stopped."
+    elif [[ "$1" = "restart" ]]; then
+        echo "Restarting Counter Strike : Global Offensive."
+        csgo stop
+        csgo start
+    elif [[ "$1" = "update" ]]; then
+        echo "Turning off Counter Strike : Global Offensive server."
+        csgo stop
+        echo "Attempting to update Counter Strike : Global Offensive"
+        #Temporary solution. May work, may not, who knows yet.
+        cd ~/; sh csgo.sh update
+        cd ~/; sh csgo.sh stop
+        echo "Might be up to date. Attempting to start server."
+        csgo start
+        
+    else
+        echo "Unknown argument supplied."
+        echo $USAGECSGO
+    fi
+}
+
+function gmod {
+    if [[ "$1" = "" ]]; then
+        echo "No argument supplied"
+        echo $USAGEGMOD
+    elif [[ "$1" = "--help" ]]; then
+        echo $USAGEGMOD
+    elif [[ "$1" = "start" ]]; then
+        tmux new-window -tTSE:4 -n Gmod
+        tmux sned-keys -tTSE:4 'cd ~/steamcmd/games/gmod; sh srcds_run $GMOD_PARAM_START' C-m
+        sleep 5
+        echo "Garry's Mod started"
+    elif [[ "$1" = "stop" ]]; then
+        tmux kill-pane -tTSE:4
+        sleep 5
+        echo "Garry's Mod stopped."
+    elif [[ "$1" = "restart" ]]; then
+        echo "Restarting Garry's Mod"
+        gmod stop
+        gmod start
+    elif [[ "$1" = "update" ]]; then
+        echo "Jordan was lazy, not coded"
+    else
+        echo "Unknown argument supplied."
+        echo $USAGEGMOD
+    fi
+}
+
+if [[ $1 = "" ]]; then
+    echo "No argument supplied"
+    echo $USAGE
+elif [[ $1 = "--help" ]]; then
+    echo $USAGE
+elif [[ $1 = "console" ]]; then
+    tmux attach-session -d -tTSE
+elif [[ $1 = "start" ]]; then
+    tmux has-session -t TSE 2>/dev/null
+    if [ "$?" -eq 1 ] ; then
+        tmux start-server
+        tmux new-session -d -s TSE -n Vanilla
+        tmux new-window -tTSE:1 -n ResonantRise
+        tmux new-window -tTSE:2 -n CounterStrike
+#       tmux new-window -tTSE:3 -n Starbound
+        tmux send-keys -tTSE:0 'cd ~/vanilla/; sh start.sh' C-m
+        tmux send-keys -tTSE:1 'cd ~/rr/; sh start.sh' C-m
+        tmux send-keys -tTSE:2 'cd ~/steamcmd/games/csgo; sh srcds_run $PARAM_START' C-m
+#       tmux send-keys -tTSE:3 'cd ~/starbound/; sh start.sh' C-m
+        echo "All servers started"
+    else
+        echo "Session already exists!"
+    fi
+elif [[ $1 = "shutdown" ]]; then
+    tmux send-keys -tTSE:0 'save-all' C-m
+    tmux send-keys -tTSE:0 'shutdown' C-m
+    tmux send-keys -tTSE:1 'save-all' C-m
+    tmux send-keys -tTSE:1 'shutdown' C-m
+    tmux send-keys -tTSE:2 C-c
+#    tmux send-keys -tTSE:3 C-c
+    tmux kill-session -tTSE
+    echo "Server has been shutdown"
+elif [[ $1 = "vanilla" ]]; then
+    vanilla $2
+elif 
+    [[ $1 = "rr" ]]; then
+    resonantrise $2
+elif
+    [[ $1 = "csgo" ]]; then
+    csgo $2
+else
+    echo "Unknown argument supplied"
+    echo $USAGE
+fi
